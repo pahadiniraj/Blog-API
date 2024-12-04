@@ -1,50 +1,201 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-
+/// User Management
 model User {
-  id Int @id @default(autoincrement())
-  email String @unique
-  name String
-  password String
-  createdAt DateTime
-  passwordChangedAt DateTime?
-  passowrdRestToken String?
-  passwordResetTokenExpire DateTime?
-  roles Role[]
+  id                      Int               @id @default(autoincrement())
+  email                   String            @unique
+  name                    String
+  password                String
+  created_at              DateTime          @default(now())
+  password_changed_at     DateTime?
+  password_reset_token    String?
+  password_reset_expires  DateTime?
+  roles                   Role[]           // User roles
+  favourites              Favourites[]     // Favorite products
+  orders                  Order[]          // User orders
+  billing_addresses       BillingAddress[] // User billing addresses
 }
 
-model Role{
-  id Int @id @default(autoincrement())
-  name String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users User[]
-  permissions RolePermission[]
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  users       User[]           // Associated users
+  permissions RolePermission[] // Associated permissions
 }
 
-model Permission{
-  id Int @id @default(autoincrement())
-  name String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  roles RolePermission[]
+model Permission {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  roles       RolePermission[] // Associated roles
 }
 
 model RolePermission {
-  id Int @id @default(autoincrement())
-  role_id Int
+  id            Int          @id @default(autoincrement())
+  role_id       Int
   permission_id Int
-  role Role @relation(fields: [role_id], references: [id])
-  permission Permission @relation(fields: [permission_id], references: [id])
+  role          Role         @relation(fields: [role_id], references: [id])
+  permission    Permission   @relation(fields: [permission_id], references: [id])
 }
 
+/// Product Management
+model Product {
+  id                  Int              @id @default(autoincrement())
+  title               String
+  description         String
+  regular_price       Decimal
+  sale_price          Decimal
+  sku                 Int?
+  stock_type          String
+  category_id         Int
+  subcategory_id      Int?
+  is_featured         Boolean          @default(false)
+  quantity            Decimal?
+  weight              Decimal?
+  size                Decimal?
+  color               String?
+  is_hot              Boolean          @default(false)
+  favourites          Favourites[]    // Users who favorited the product
+  tags                Tag[]           // Tags associated with the product
+  category            Category        @relation(fields: [category_id], references: [id])
+  subcategory         Subcategory?    @relation(fields: [subcategory_id], references: [id])
+  images              ProductImage[]  // Product images
+  order_items         OrderItem[]     // Related order items
+}
+
+model ProductImage {
+  id          Int      @id @default(autoincrement())
+  url         String
+  product     Product  @relation(fields: [product_id], references: [id])
+  product_id  Int
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  products  Product[] // Associated products
+}
+
+model Favourites {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  product_id  Int
+  category_id Int
+  user        User     @relation(fields: [user_id], references: [id])
+  product     Product  @relation(fields: [product_id], references: [id])
+  category    Category @relation(fields: [category_id], references: [id])
+}
+
+/// Order Management
+model Order {
+  id              Int              @id @default(autoincrement())
+  user_id         Int
+  total_price     Float
+  created_at      DateTime         @default(now())
+  user            User             @relation(fields: [user_id], references: [id])
+  items           OrderItem[]      // Order items
+  billing_address BillingAddress?  // Billing address
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  product_id Int
+  quantity   Int
+  price      Decimal
+  order      Order    @relation(fields: [order_id], references: [id])
+  product    Product  @relation(fields: [product_id], references: [id])
+}
+
+model BillingAddress {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  order_id       Int      @unique
+  first_name     String
+  last_name      String
+  company_name   String?
+  street_address String
+  country        String
+  state          String
+  zip            String
+  email          String
+  phone          String
+  user           User     @relation(fields: [user_id], references: [id])
+  order          Order    @relation(fields: [order_id], references: [id])
+}
+
+/// Category Management
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  image_url     String?
+  products      Product[]     // Associated products
+  favourites    Favourites[]  // Favorited products
+  subcategories Subcategory[] // Subcategories
+}
+
+model Subcategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  image_url   String?
+  category_id Int
+  category    Category  @relation(fields: [category_id], references: [id])
+  products    Product[] // Associated products
+}
+
+/// UI Elements
+model Banner {
+  id       Int    @id @default(autoincrement())
+  title    String
+  subtitle String
+  url      String
+  image_url String
+}
+
+model Menu {
+  id        Int     @id @default(autoincrement())
+  title     String
+  parent_id Int?
+  parent    Menu?   @relation("MenuSubmenu", fields: [parent_id], references: [id])
+  children  Menu[]  @relation("MenuSubmenu")
+}
+
+model Logo {
+  id       Int    @id @default(autoincrement())
+  name     String
+  image_url String
+  url      String
+}
+
+/// Testimonials
+model ClientTestimonial {
+  id           Int      @id @default(autoincrement())
+  client_name  String
+  client_image String?
+  client_type  String?
+  client_rating Int?
+  testimonial  String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+/// Ads
+model Ad {
+  id          Int       @id @default(autoincrement())
+  title       String
+  subtitle    String
+  start_time  DateTime?
+  end_time    DateTime?
+  description String?
+  url         String
+}
