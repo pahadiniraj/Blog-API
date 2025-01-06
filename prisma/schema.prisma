@@ -23,11 +23,27 @@ model User {
 
 /// Role Management
 model Role {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  users       User[]   // Associated users
+    id          Int              @id @default(autoincrement())
+    name        String           @unique
+    createdAt   DateTime         @default(now())
+    updatedAt   DateTime         @updatedAt
+    users       User[]
+    permissions RolePermission[]
+}
+
+model Permission {
+    id         Int              @id @default(autoincrement())
+    permission String           @unique
+    slug       String           @unique
+    roles      RolePermission[]
+}
+
+model RolePermission {
+    id           Int        @id @default(autoincrement())
+    roleId       Int
+    permissionId Int
+    Role         Role       @relation(fields: [roleId], references: [id])
+    Permission   Permission @relation(fields: [permissionId], references: [id])
 }
 
 /// Blog Post Management
@@ -36,6 +52,7 @@ model Post {
   title         String
   content       String
   slug          String        @unique
+  published     Boolean       @default(false)
   created_at    DateTime      @default(now())
   updated_at    DateTime      @updatedAt
   author_id     Int

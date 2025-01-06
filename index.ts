@@ -1,7 +1,4 @@
 import express from "express";
-import http from "http";
-import cookieParser from "cookie-parser";
-import compression from "compression";
 import cors from "cors";
 
 const app = express();
@@ -27,14 +24,10 @@ app.use(
   })
 );
 
-app.use(compression());
-
-const server = http.createServer(app);
-
 app.get("/", (req, res) => {
   res.send("Hello, World i'm niraj!");
 });
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server is running in port ${PORT}`);
 });
